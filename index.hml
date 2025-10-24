@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Minas da Nena — Joguinho</title>
+  <style>
+    :root{
+      --bg: #fff7fb;
+      --panel: #ffeef8;
+      --accent: #ff6fa3;
+      --accent-2: #ffb3d1;
+      --text: #3b2b2d;
+      --safe: #f7fff6;
+    }
+    *{box-sizing:border-box}
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-image: url('fundo-nena.png'); /* nome da sua imagem */
+      background-size: 100%; /* aumenta intensidade do fundo */
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      display: flex; /* para centralizar o conteúdo */
+      justify-content: center; /* centraliza horizontalmente */
+      align-items: center; /* centraliza verticalmente */
+      height: 100vh; /* ocupa 100% da altura da tela */
+      font-family: 'Poppins', sans-serif;
+    }
+
+    /* Container em landscape (aspect-ratio) */
+    .card{
+      width:min(1100px,95vw);
+      aspect-ratio:16/9; /* força layout paisagem */
+      background:linear-gradient(180deg,var(--panel),var(--safe));
+      opacity: 0.9;
+      border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,0.12);padding:18px;display:flex;flex-direction:column;gap:12px;overflow:hidden
+    }
+
+    header{display:flex;align-items:center;gap:12px}
+    .logo{display:flex;align-items:center;gap:10px}
+    .logo .icon{width:64px;height:64px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;font-size:28px;color:white;box-shadow:0 6px 14px rgba(255,111,163,0.25)}
+    h1{font-size:24px;margin:0}
+    p.lead{margin:0;color:#6b4951}
+
+    .topbar{display:flex;gap:12px;align-items:center;margin-left:auto}
+    button{cursor:pointer;border:0;padding:8px 12px;border-radius:10px;background:var(--accent);color:white;font-weight:600}
+    .btn-soft{background:transparent;border:2px solid var(--accent);color:var(--accent)}
+
+    main{display:flex;flex:1;gap:14px}
+    .left{flex:1;display:flex;flex-direction:column;gap:10px}
+    .board-wrap{flex:1;display:flex;align-items:center;justify-content:center}
+    .board{display:grid;gap:6px;background:transparent;padding:12px;border-radius:12px}
+
+    /* cells */
+    .cell{width:44px;height:44px;border-radius:8px;background:linear-gradient(180deg,#fff,#ffeef7);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;user-select:none;box-shadow:inset 0 -2px 0 rgba(0,0,0,0.04)}
+    .cell.cover{background:linear-gradient(180deg,#ffdce7,#ffd1e3);cursor:pointer}
+    .cell.flag{background:linear-gradient(180deg,#fff8fb,#ffddee)}
+    .cell.mine{background:linear-gradient(180deg,#ff9fbf,#ff7aa3);color:white}
+    .cell.open{background:var(--safe);cursor:default}
+
+    .right{width:320px;max-width:34%;display:flex;flex-direction:column;gap:10px}
+    .card-info{background:linear-gradient(180deg,#ffffff,#fff0f6);padding:12px;border-radius:12px}
+    .stats{display:flex;gap:8px;align-items:center}
+    .stat{flex:1;background:rgba(255,255,255,0.6);padding:10px;border-radius:10px;text-align:center}
+    .footer{display:flex;justify-content:space-between;align-items:center;color:#7a5b63;font-size:13px}
+
+    /* mobile adjustments */
+    @media (max-width:800px){
+      .card{aspect-ratio:4/3;padding:12px}
+      .right{width:180px;max-width:40%}
+      .cell{width:36px;height:36px}
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <header>
+    <div class="logo">
+      <div class="icon">🎀</div>
+      <div>
+        <h1>Minas da Nena - Helena Coelho</h1>
+        <p class="lead">Um joguinho estilo "campo minado" para Nena e amiguinhas brincar</p>
+      </div>
+    </div>
+
+    <div class="topbar">
+      <div style="display:flex;gap:8px;align-items:center">
+        <label>Linhas <input id="rows" type="number" min="5" max="12" value="9" style="width:56px;margin-left:6px"></label>
+        <label>Col <input id="cols" type="number" min="6" max="16" value="12" style="width:56px;margin-left:6px"></label>
+        <label>Minas <input id="mines" type="number" min="1" max="40" value="12" style="width:56px;margin-left:6px"></label>
+      </div>
+      <button id="reset">Reiniciar ♡</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="left">
+      <div class="board-wrap">
+        <div id="board" class="board" aria-label="Tabuleiro de jogo"></div>
+      </div>
+      <div class="footer">
+        <div>Dicas: clique com o botão direito para marcar bandeira 🚩</div>
+        <div id="message">Boa sorte! 🌸</div>
+      </div>
+    </div>
+
+    <aside class="right">
+      <div class="card-info">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div><strong>Minas restantes</strong></div>
+          <div id="minesLeft" style="font-size:20px;">12</div>
+        </div>
+        <div class="stats">
+          <div class="stat"><div>Tempo</div><div id="timer">0s</div></div>
+          <div class="stat"><div>Estado</div><div id="state">Jogando</div></div>
+        </div>
+      </div>
+
+      <div class="card-info">
+        <h3>Como jogar</h3>
+        <ol>
+          <li>Clique em uma célula para revelar.</li>
+          <li>Se for mina 💣 — acabou! Mas pode reiniciar.</li>
+          <li>Clique com o botão direito para marcar bandeira (segura que é mina!).</li>
+        </ol>
+      </div>
+
+      <div style="text-align:center">
+        <button class="btn-soft" id="cheer">Surpresa!</button>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<script>
+  // Lógica simples de Campo Minado
+  const boardEl = document.getElementById('board');
+  const resetBtn = document.getElementById('reset');
+  const rowsIn = document.getElementById('rows');
+  const colsIn = document.getElementById('cols');
+  const minesIn = document.getElementById('mines');
+  const minesLeftEl = document.getElementById('minesLeft');
+  const messageEl = document.getElementById('message');
+  const timerEl = document.getElementById('timer');
+  const stateEl = document.getElementById('state');
+  const cheerBtn = document.getElementById('cheer');
+
+  let grid = [];
+  let rows=9, cols=12, mines=12;
+  let timer=0, timerInterval=null;
+  let flags=0, opened=0, totalCells=0;
+
+  function init(){
+    rows = parseInt(rowsIn.value);
+    cols = parseInt(colsIn.value);
+    mines = Math.min(parseInt(minesIn.value), rows*cols-1);
+    minesLeftEl.textContent = mines;
+    grid = [];
+    opened=0;flags=0;totalCells=rows*cols;
+    boardEl.style.gridTemplateColumns = `repeat(${cols},44px)`;
+    boardEl.innerHTML='';
+    for(let r=0;r<rows;r++){
+      grid[r]=[];
+      for(let c=0;c<cols;c++){
+        const cell = {mine:false,open:false,flag:false,adj:0,el:null};
+        const el = document.createElement('div');
+        el.className='cell cover';
+        el.dataset.r=r;el.dataset.c=c;
+        el.addEventListener('click',onClick);
+        el.addEventListener('contextmenu',onRightClick);
+        el.addEventListener('auxclick',e=>{ if(e.button===1) e.preventDefault(); });
+        boardEl.appendChild(el);
+        cell.el = el;
+        grid[r][c]=cell;
+      }
+    }
+    placeMines();
+    calcAdj();
+    stateEl.textContent='Jogando';
+    messageEl.textContent='Boa sorte! 🌸';
+    stopTimer(); timer=0; timerEl.textContent='0s';
+  }
+
+  function placeMines(){
+    let placed=0;
+    while(placed<mines){
+      const r=Math.floor(Math.random()*rows);
+      const c=Math.floor(Math.random()*cols);
+      if(!grid[r][c].mine){grid[r][c].mine=true;placed++;}
+    }
+  }
+  function calcAdj(){
+    for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+      if(grid[r][c].mine)continue;
+      let adj=0;
+      for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+        const nr=r+dr,nc=c+dc; if(nr<0||nc<0||nr>=rows||nc>=cols)continue;
+        if(grid[nr][nc].mine)adj++;
+      }
+      grid[r][c].adj=adj;
+    }
+  }
+
+  function onClick(e){
+    const r=parseInt(this.dataset.r), c=parseInt(this.dataset.c);
+    if(!timerInterval)startTimer();
+    openCell(r,c);
+    checkWin();
+  }
+  function onRightClick(e){
+    e.preventDefault();
+    const r=parseInt(this.dataset.r), c=parseInt(this.dataset.c);
+    const cell=grid[r][c];
+    if(cell.open) return;
+    cell.flag=!cell.flag;
+    flags += cell.flag?1:-1;
+    cell.el.className = cell.flag? 'cell flag':'cell cover';
+    minesLeftEl.textContent = Math.max(0, mines-flags);
+  }
+
+  function openCell(r,c){
+    const cell=grid[r][c];
+    if(cell.open||cell.flag) return;
+    cell.open=true; opened++;
+    cell.el.className='cell open';
+    if(cell.mine){
+      cell.el.classList.add('mine'); cell.el.textContent='💣';
+      gameOver(false);
+      return;
+    }
+    if(cell.adj>0){
+      cell.el.textContent=cell.adj;
+      cell.el.style.color = pickNumberColor(cell.adj);
+    } else {
+      // expand neighbors
+      for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){
+        const nr=r+dr,nc=c+dc;if(nr<0||nc<0||nr>=rows||nc>=cols)continue;
+        if(!grid[nr][nc].open) openCell(nr,nc);
+      }
+    }
+  }
+
+  function pickNumberColor(n){
+    const map=['#2d7b9a','#3a9e6b','#c86c34','#b6507a','#6b3a9b','#9b4b6b','#333','#555'];
+    return map[(n-1)%map.length]||'#000';
+  }
+
+  function gameOver(win){
+    stopTimer();
+    stateEl.textContent = win? 'Venceu!':'Perdeu :(';
+    if(!win){
+      // revelar minas
+      for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+        if(grid[r][c].mine && !grid[r][c].open){ grid[r][c].el.className='cell mine'; grid[r][c].el.textContent='💣'; }
+      }
+      messageEl.textContent='Ops! Recomece e tente de novo 💖';
+    } else {
+      messageEl.textContent='Parabéns! Você encontrou tudo 🌟';
+    }
+  }
+
+  function checkWin(){
+    if(opened === totalCells - mines){
+      gameOver(true);
+    }
+  }
+
+  function startTimer(){
+    timerInterval = setInterval(()=>{timer++; timerEl.textContent=timer+ 's';},1000);
+  }
+  function stopTimer(){ if(timerInterval){ clearInterval(timerInterval); timerInterval=null; } }
+
+  resetBtn.addEventListener('click',()=>{init();});
+  rowsIn.addEventListener('change',init);colsIn.addEventListener('change',init);minesIn.addEventListener('change',init);
+
+  cheerBtn.addEventListener('click',()=>{ alert('Você é incrível! 🩷 Continue jogando!'); });
+
+  // evita menu do botão direito no tabuleiro
+  boardEl.addEventListener('contextmenu',e=>{ e.preventDefault(); });
+
+  // iniciar
+  init();
+
+</script>
+</body>
+</html>
